@@ -35,3 +35,5 @@ def test_bootstrap_sample_invalid_shapes():
 
     with pytest.raises(ValueError, match="must match length of y"):
         bootstrap_sample(X, y, dummy_stat, n_bootstrap=10)
+    with pytest.raises(TypeError, match="must be numpy integer darray"):
+        bootstrap_sample(X,y, dummy_stat, n_bootstrap=10)
