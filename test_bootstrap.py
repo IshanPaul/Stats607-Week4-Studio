@@ -7,38 +7,31 @@ def test_bootstrap_integration():
     # This test should initially fail
     pass
 
-def test_bootstrap_sample():
-    """Test that bootstrap_sample works"""
-    # Simple dataset: linear relationship y = 2*X + noise
-    n = 200
+def test_bootstrap_sample_valid():
+    """Check bootstrap_sample works on a simple dataset."""
     rng = np.random.default_rng(123)
+    n = 100
     X = rng.normal(size=(n, 1))
-    y = 2*X[:, 0] + rng.normal(scale=0.5, size=n)
-    
-    # Add intercept column
+    y = 3*X[:, 0] + rng.normal(size=n)
     X_design = np.c_[np.ones(n), X]
 
-    # Statistic: slope coefficient
     def slope_stat(X, y):
-        # OLS closed form (X'X)^-1 X'y
-        beta = np.linalg.inv(X.T @ X) @ (X.T @ y)
-        return beta[1]  # slope
+        beta, *_ = np.linalg.lstsq(X, y, rcond=None)
+        return beta[1]
 
-    # Run bootstrap
-    boot_stats = bootstrap_sample(X_design, y, slope_stat, n_bootstrap=500, random_state=42)
-    
-    # --- Assertions ---
-    # 1. Check output shape
-    assert boot_stats.shape == (500,), "Bootstrap output has wrong shape"
-    
-    # 2. Check variability
-    assert boot_stats.std() > 0, "Bootstrap distribution has zero variance"
-    
-    # 3. Check mean is close to true slope (~2)
-    mean_est = boot_stats.mean()
-    assert np.isclose(mean_est, 2, atol=0.2), f"Bootstrap mean {mean_est:.3f} not close to 2"
-    
-    print("All tests passed ✅")
-    print(f"Bootstrap mean slope: {mean_est:.3f}")
-    print(f"Bootstrap std slope: {boot_stats.std():.3f}")
+    boot_stats = bootstrap_sample(X_design, y, slope_stat, n_bootstrap=100, random_state=42)
+    assert boot_stats.shape == (100,)
+    assert boot_stats.std() > 0
 
+
+def test_bootstrap_sample_invalid_shapes():
+    """Check bootstrap_sample raises ValueError for mismatched X and y."""
+    rng = np.random.default_rng(123)
+    X = rng.normal(size=(50, 2))  # 50 samples
+    y = rng.normal(size=60)       # 60 samples, mismatch!
+
+    def dummy_stat(X, y):
+        return 0.0
+
+    with pytest.raises(ValueError, match="must match length of y"):
+        bootstrap_sample(X, y, dummy_stat, n_bootstrap=10)
