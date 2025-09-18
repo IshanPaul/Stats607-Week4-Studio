@@ -50,7 +50,9 @@ def bootstrap_ci(bootstrap_stats, alpha=0.05):
     
     ....
     """
-    pass
+    lower = np.percentile(bootstrap_stats, 100 * (alpha / 2))
+    upper = np.percentile(bootstrap_stats, 100 * (1 - alpha / 2))
+    return lower, upper
 
 def R_squared(X, y):
     """
@@ -72,4 +74,20 @@ def R_squared(X, y):
     ValueError
         If X.shape[0] != len(y)
     """
-    pass
+    X = np.asarray(X)
+    y = np.asarray(y)
+
+    if X.shape[0] != len(y):
+        raise ValueError("Number of rows in X must match length of y")
+
+    # OLS estimate: beta = (X'X)^(-1) X'y
+    beta = np.linalg.inv(X.T @ X) @ (X.T @ y)
+
+    # Predictions
+    y_hat = X @ beta
+
+    # Residual sum of squares (RSS) and total sum of squares (TSS)
+    ss_res = np.sum((y - y_hat) ** 2)
+    ss_tot = np.sum((y - y.mean()) ** 2)
+
+    return 1 - ss_res / ss_tot
